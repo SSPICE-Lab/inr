@@ -76,7 +76,12 @@ class SineLayer(BaseLayer):
 
         self._init_weights()
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(
+            self,
+            x: torch.Tensor,
+            weight: torch.Tensor = None,
+            bias: torch.Tensor = None
+        ) -> torch.Tensor:
         """
         Forward pass of the layer.
 
@@ -85,13 +90,27 @@ class SineLayer(BaseLayer):
         x : torch.Tensor
             Input tensor.
 
+        weight : torch.Tensor, optional
+            Weight tensor, by default None.
+            When provided, the layer uses the given weight tensor instead of the learned weights.
+
+        bias : torch.Tensor, optional
+            Bias tensor, by default None.
+            When provided, the layer uses the given bias tensor instead of the learned biases.
+
         Returns
         -------
         torch.Tensor
             Output tensor.
         """
 
-        return torch.sin(self.scale_factor * self.linear(x))
+        if weight is None:
+            return torch.sin(self.scale_factor * self.linear(x))
+
+        x = torch.matmul(x, weight.T)
+        if bias is not None:
+            x += bias
+        return torch.sin(self.scale_factor * x)
 
     def _init_weights(self) -> None:
         """
