@@ -168,8 +168,8 @@ class BaseNetwork(torch.nn.Module):
         for input_batch in input_dataloader:
             input_batch = input_batch.to(device)
             output_batch = self(input_batch)
-            output.append(output_batch)
-        return torch.cat(output).detach().cpu()
+            output.append(output_batch.detach().cpu())
+        return torch.cat(output)
 
 
     def _single_batch_training(
