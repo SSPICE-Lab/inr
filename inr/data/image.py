@@ -87,7 +87,8 @@ class ImageData(torch.utils.data.Dataset):
             file_path : str,
             image_size : Optional[Tuple[int, int]] = None,
             transform : torchvision.transforms.transforms.Compose = DEFAULT_TRANSFORM,
-            ranges : Optional[Tuple[Tuple[float, float], ...]] = None
+            ranges : Optional[Tuple[Tuple[float, float], ...]] = None,
+            **kwargs
         ):
         """
         Dataset for an image.
@@ -109,6 +110,21 @@ class ImageData(torch.utils.data.Dataset):
         ranges : Tuple[Tuple[float, float], ...], optional
             Ranges of each dimension.
             Defaults to [-1, 1] for each dimension.
+
+        Keyword Arguments
+        -----------------
+        coords_noise : float, optional
+            Noise to add to the coordinates.
+            Noise is sampled from a uniform distribution in the range
+            [`-coords_noise`, `coords_noise`].
+            Defaults to 0.0.
+
+        coords_noise_prob : float, optional
+            Probability of adding noise to the coordinates.
+            Ignored if `coords_noise` is 0.
+            Defaults to 0.1.
+
+            Note: Noise is added to x and y coordinates independently.
 
         Raises
         ------
@@ -157,6 +173,21 @@ class ImageData(torch.utils.data.Dataset):
 
         # Get the grid
         self.coord_grid = get_grid(2, (self.height, self.width), ranges=ranges)
+
+        coords_noise = kwargs.get('coords_noise', 0.0)
+        if coords_noise > 0:
+            coords_noise_prob = kwargs.get('coords_noise_prob', 0.1)
+
+            # Generate Bernoulli RV with probability coords_noise_prob
+            mask = torch.rand_like(self.coord_grid) < coords_noise_prob
+
+            # Generate noise
+            # Uniform distribution in the range [-coords_noise, coords_noise]
+            noise = 2 * coords_noise * torch.rand_like(self.coord_grid) - coords_noise
+
+            # Apply noise to the coordinates
+            self.coord_grid[mask] += noise[mask]
+
 
     def __len__(self) -> int:
         """
