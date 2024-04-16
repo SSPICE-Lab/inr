@@ -12,7 +12,9 @@ if __name__ == "__main__":
         torch.backends.cudnn.benchmark = True
 
     # Load the image and create a dataloader
-    data = inr.data.image.ImageData("test_images/cameraman.jpeg")
+    data = inr.data.image.ImageData(
+        "test_images/cameraman.jpeg",
+        coords_noise=1/1024)
     dataloader = torch.utils.data.DataLoader(data, batch_size=100000, shuffle=True)
 
     # Create the neural network
@@ -28,13 +30,12 @@ if __name__ == "__main__":
     ).to(device)
 
     # Create the optimizer and the learning rate scheduler
-    optimizer = torch.optim.Adam(net.parameters(), lr=1e-3)
-    lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=5, factor=0.5)
+    optimizer = torch.optim.Adam(net.parameters(), lr=1e-4)
 
     # Train the network
     net.fit(
         dataloader,
-        epochs=1000,
+        epochs=2500,
         optimizer=optimizer,
         verbose=True,
         save_path="test_models/cameraman.pt",
@@ -45,7 +46,7 @@ if __name__ == "__main__":
     net.load_state_dict(torch.load("test_models/cameraman.pt"))
 
     # Generate the test coordinates
-    test_coords = inr.data.CoordGrid(2, (225, 225))
+    test_coords = inr.data.CoordGrid(2, (1024, 1024))
     test_dataloader = torch.utils.data.DataLoader(test_coords, batch_size=100000, shuffle=False)
 
     # Generate the test images
@@ -55,4 +56,4 @@ if __name__ == "__main__":
     inr.data.utils.save_image(
         test_images,
         "test_images/cameraman_generated.png",
-        image_size=(225, 225))
+        image_size=(1024, 1024))
