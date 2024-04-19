@@ -7,7 +7,7 @@ Sequential
     Sequential network.
 """
 
-from typing import List
+from typing import Dict, List
 
 import torch
 
@@ -105,7 +105,7 @@ class Sequential(BaseNetwork):
             **kwargs
         ))
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, param_dict: Dict = None) -> torch.Tensor:
         """
         Forward pass of the network.
 
@@ -114,14 +114,29 @@ class Sequential(BaseNetwork):
         x : torch.Tensor
             Input tensor.
 
+        param_dict : dict, optional
+            Dictionary containing the parameters for the layers, by default None.
+            Expects the same keys as the state_dict of the network.
+
         Returns
         -------
         torch.Tensor
             Output tensor.
         """
 
-        for layer in self.layers:
-            x = layer(x)
+        if param_dict is None:
+            param_dict = {}
+
+        for i, layer in enumerate(self.layers):
+            layer_kwargs = {}
+            list_of_layer_params = list(dict(layer.named_parameters()).keys())
+
+            for key in list_of_layer_params:
+                param_dict_key = f"layers.{i}.{key}"
+                if param_dict_key in param_dict:
+                    layer_kwargs[key.split('.')[-1]] = param_dict[param_dict_key]
+
+            x = layer(x, **layer_kwargs)
 
         return x
 
