@@ -8,7 +8,7 @@ BaseNetwork
 """
 
 import time
-from typing import Optional
+from typing import Optional, Union
 
 import numpy as np
 import torch
@@ -240,14 +240,7 @@ class BaseNetwork(torch.nn.Module):
             )
 
             if scheduler is not None:
-                if scheduler_args is None:
-                    scheduler.step()
-                elif scheduler_args == 'loss':
-                    scheduler.step(loss)
-                else:
-                    raise ValueError(
-                        f"Invalid value for scheduler_args: {scheduler_args}"
-                    )
+                self._scheduler_step(scheduler, scheduler_args, loss, epoch)
 
             print_progress(
                 epoch,
@@ -335,14 +328,12 @@ class BaseNetwork(torch.nn.Module):
                 ) * input_data.shape[0]
 
                 if scheduler is not None:
-                    if scheduler_args is None:
-                        scheduler.step()
-                    elif scheduler_args == 'loss':
-                        scheduler.step(loss / ((i+1) * input_data.shape[0]))
-                    else:
-                        raise ValueError(
-                            f"Invalid value for scheduler_args: {scheduler_args}"
-                        )
+                    self._scheduler_step(
+                        scheduler,
+                        scheduler_args,
+                        loss / ((i+1) * input_data.shape[0]),
+                        epoch + i / len(input_dataloader)
+                    )
 
                 print_batch_progress(
                     epoch,
@@ -419,3 +410,57 @@ class BaseNetwork(torch.nn.Module):
         optimizer.step()
 
         return loss.item()
+
+    def _scheduler_step(
+            self,
+            scheduler: torch.optim.lr_scheduler._LRScheduler,
+            scheduler_args: Optional[str],
+            loss: float,
+            epoch: Union[int, float]
+        ):
+        """
+        Perform a single step of the learning rate scheduler.
+
+        Parameters
+        ----------
+        scheduler : torch.optim.lr_scheduler._LRScheduler
+            Learning rate scheduler.
+
+        scheduler_args : str, optional
+            Argument for the learning rate scheduler, by default None.
+
+        loss : float
+            Loss of the current epoch.
+
+        epoch : int
+            Current epoch.
+        """
+
+        if not isinstance(scheduler, list):
+            scheduler = [scheduler]
+        if not isinstance(scheduler_args, list):
+            scheduler_args = [scheduler_args]
+
+        n_schedulers = len(scheduler)
+        if len(scheduler_args) == 1 and n_schedulers > 1:
+            scheduler_args = scheduler_args * n_schedulers
+
+        if len(scheduler_args) != n_schedulers:
+            raise ValueError(
+                "The number of learning rate schedulers and arguments must be the same."
+            )
+
+        for i in range(n_schedulers):
+            scheduler_instance = scheduler[i]
+            scheduler_instance_args = scheduler_args[i]
+
+            if scheduler_instance_args is None:
+                scheduler_instance.step()
+            elif scheduler_instance_args == 'loss':
+                scheduler_instance.step(metrics=loss)
+            elif scheduler_instance_args == 'epoch':
+                scheduler_instance.step(epoch=epoch)
+            else:
+                raise ValueError(
+                    f"Invalid value for scheduler_args: {scheduler_instance_args}"
+                )
