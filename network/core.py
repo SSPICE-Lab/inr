@@ -10,6 +10,7 @@ BaseNetwork
 import time
 from typing import Optional
 
+import numpy as np
 import torch
 import torch.utils.data
 
@@ -132,10 +133,12 @@ class BaseNetwork(torch.nn.Module):
 
         if verbose:
             if save_path is not None:
-                print(f"Best loss: {get_loss_string(loss)}")
+                print(f"Best loss: {get_loss_string(loss.min())}")
 
             else:
-                print(f"Final loss: {get_loss_string(loss)}")
+                print(f"Final loss: {get_loss_string(loss[-1])}")
+
+        return loss
 
     def generate(
             self,
@@ -179,7 +182,7 @@ class BaseNetwork(torch.nn.Module):
             optimizer: torch.optim.Optimizer,
             save_path: Optional[str] = None,
             **kwargs
-        ) -> float:
+        ) -> np.ndarray:
         """
         Train the network on a single batch of data.
 
@@ -210,8 +213,8 @@ class BaseNetwork(torch.nn.Module):
 
         Returns
         -------
-        float
-            Best loss if `save_path` is not None, otherwise final loss.
+        np.ndarray
+            Loss after each epoch.
         """
 
         scheduler = kwargs.get('scheduler', None)
@@ -223,6 +226,8 @@ class BaseNetwork(torch.nn.Module):
         input_data, target_data = next(iter(input_dataloader))
         input_data = input_data.to(device)
         target_data = target_data.to(device)
+
+        loss_list = []
 
         if save_path is not None:
             best_loss = float('inf')
@@ -256,15 +261,15 @@ class BaseNetwork(torch.nn.Module):
                     best_loss = loss
                     torch.save(self.state_dict(), save_path)
 
+            loss_list.append(loss)
+
         print_training_summary(
             epochs,
             loss,
             start_time
         )
 
-        if save_path is not None:
-            return best_loss
-        return loss
+        return np.array(loss_list)
 
     def _batch_training(
             self,
@@ -273,7 +278,7 @@ class BaseNetwork(torch.nn.Module):
             optimizer: torch.optim.Optimizer,
             save_path: Optional[str] = None,
             **kwargs
-        ) -> float:
+        ) -> np.ndarray:
         """
         Train the network on data with more than one batch.
 
@@ -304,14 +309,15 @@ class BaseNetwork(torch.nn.Module):
 
         Returns
         -------
-        float
-            Best loss if `save_path` is not None, otherwise final loss.
+        np.ndarray
+            Loss after each epoch.
         """
 
         scheduler = kwargs.get('scheduler', None)
         scheduler_args = kwargs.get('scheduler_args', None)
         device = kwargs.get('device', torch.device('cpu'))
 
+        loss_list = []
         if save_path is not None:
             best_loss = float('inf')
         for epoch in range(epochs):
@@ -348,6 +354,7 @@ class BaseNetwork(torch.nn.Module):
                 )
 
             loss /= len(input_dataloader.dataset)
+            loss_list.append(loss)
 
             if save_path is not None:
                 if loss < best_loss:
@@ -362,9 +369,7 @@ class BaseNetwork(torch.nn.Module):
                 start_time
             )
 
-        if save_path is not None:
-            return best_loss
-        return loss
+        return np.array(loss_list)
 
     def _training_step(
             self,
