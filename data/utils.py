@@ -108,10 +108,14 @@ def save_image(
     pixels : torch.Tensor
         Pixels to be saved as an image.
         Shape of the tensor is (num_pixels, num_channels).
+
     file_path : str
         Path to the image file.
+
     image_size : Optional[Tuple[int, int]], optional
-        Size of the image, by default None.
+        Size of the image of the format (height, width).
+        If None, the image is reshaped to a square image (default).
+        If an integer, the image is reshaped to a square image of that size.
     """
 
     if image_size is None:

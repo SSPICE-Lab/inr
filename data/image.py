@@ -101,6 +101,7 @@ class ImageData(torch.utils.data.Dataset):
         image_size : Tuple[int, int], optional
             Size of the image.
             Resizes the image if specified, otherwise uses the original size.
+            The format is (height, width).
 
         transform : torchvision.transforms.transforms.Compose, optional
             Transform to apply to the image.
@@ -158,8 +159,8 @@ class ImageData(torch.utils.data.Dataset):
                 image_size = (image_size, image_size)
             if len(image_size) != 2:
                 raise ValueError(f"image_size must be a tuple of length 2, got {len(image_size)}.")
-
-            img = img.resize(image_size)
+            height, width = image_size
+            img = img.resize((width, height))
 
         # Get the height and width of the image
         self.width, self.height = img.size
