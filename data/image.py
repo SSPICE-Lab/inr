@@ -40,7 +40,7 @@ def _is_image(file_path : str) -> bool:
     """
 
     for fmt in SUPPORTED_FORMATS:
-        if file_path.endswith(fmt):
+        if file_path.lower().endswith(fmt):
             return True
     return False
 
