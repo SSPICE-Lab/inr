@@ -162,7 +162,7 @@ class ImageData(torch.utils.data.Dataset):
             img = img.resize(image_size)
 
         # Get the height and width of the image
-        self.height, self.width = img.size
+        self.width, self.height = img.size
 
         # Apply the transform
         img = transform(img)

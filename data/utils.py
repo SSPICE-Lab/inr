@@ -119,7 +119,7 @@ def save_image(
     elif isinstance(image_size, int):
         image_size = (image_size,) * 2
 
-    img = pixels.reshape(image_size[1], image_size[0], -1).cpu().detach().numpy()
+    img = pixels.reshape(image_size[0], image_size[1], -1).cpu().detach().numpy()
     img = img * 0.5 + 0.5
     img = img * 255
     img = np.clip(img, 0, 255)
