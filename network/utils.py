@@ -174,7 +174,7 @@ def print_batch_progress(
     time_elapsed = time.time() - start_time
     time_per_batch = time_elapsed / (batch + 1)
     time_remaining = (batches - batch - 1) * time_per_batch
-    progress = (epoch + batch / batches) / epochs
+    progress = batch / batches
 
     print_string = f'Epoch {epoch + 1}/{epochs} - Batch {batch + 1}/{batches}: '
     print_string += f'{_get_progress_string(progress)} - '
